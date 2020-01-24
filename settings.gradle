@@ -1,0 +1,2 @@
+include ':EasyTransformLib'
+rootProject.name='EasyTransform'

@@ -1,0 +1,43 @@
+apply plugin: 'java-library'
+apply plugin: 'com.novoda.bintray-release'
+
+buildscript {
+    repositories {
+        maven {
+            url 'https://maven.aliyun.com/repository/jcenter'
+        }
+
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.novoda:bintray-release:0.9.2'
+    }
+}
+
+repositories {
+    maven {
+        url 'https://maven.aliyun.com/repository/google'
+    }
+    maven {
+        url 'https://maven.aliyun.com/repository/jcenter'
+    }
+
+    google()
+    jcenter()
+}
+
+dependencies {
+    implementation gradleApi()
+    implementation 'com.android.tools.build:gradle:3.5.3'
+    implementation 'org.javassist:javassist:3.26.0-GA'
+    implementation 'org.zeroturnaround:zt-zip:1.13'
+}
+
+publish {
+    userOrg = 'mapleleaf'
+    groupId = 'com.github.hlls'
+    artifactId = 'transform'
+    publishVersion = '0.0.1'
+    desc = 'Oh hi, this is a nice description for a project, right?'
+    website = 'https://github.com/novoda/bintray-release'
+}
