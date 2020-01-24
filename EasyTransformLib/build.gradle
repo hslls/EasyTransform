@@ -38,6 +38,6 @@ publish {
     groupId = 'com.github.hlls'
     artifactId = 'transform'
     publishVersion = '0.0.1'
-    desc = 'Oh hi, this is a nice description for a project, right?'
-    website = 'https://github.com/novoda/bintray-release'
+    desc = 'Android transform 辅助基类'
+    website = 'https://github.com/hslls/EasyTransform.git'
 }
