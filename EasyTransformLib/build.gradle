@@ -37,7 +37,7 @@ publish {
     userOrg = 'mapleleaf'
     groupId = 'com.github.hlls'
     artifactId = 'transform'
-    publishVersion = '0.0.1'
+    publishVersion = '0.0.3'
     desc = 'Android transform 辅助基类'
     website = 'https://github.com/hslls/EasyTransform.git'
 }
