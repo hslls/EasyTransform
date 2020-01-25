@@ -27,9 +27,9 @@ repositories {
 }
 
 dependencies {
-    implementation gradleApi()
-    implementation 'com.android.tools.build:gradle:3.5.3'
-    implementation 'org.javassist:javassist:3.26.0-GA'
+    api gradleApi()
+    api 'com.android.tools.build:gradle:3.5.3'
+    api 'org.javassist:javassist:3.26.0-GA'
     implementation 'org.zeroturnaround:zt-zip:1.13'
 }
 
@@ -37,7 +37,7 @@ publish {
     userOrg = 'mapleleaf'
     groupId = 'com.github.hlls'
     artifactId = 'transform'
-    publishVersion = '0.0.3'
+    publishVersion = '0.0.4'
     desc = 'Android transform 辅助基类'
     website = 'https://github.com/hslls/EasyTransform.git'
 }
