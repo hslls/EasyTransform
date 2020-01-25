@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    api gradleApi()
+    implementation gradleApi()
     api 'com.android.tools.build:gradle:3.5.3'
     api 'org.javassist:javassist:3.26.0-GA'
     implementation 'org.zeroturnaround:zt-zip:1.13'
