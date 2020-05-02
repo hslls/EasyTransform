@@ -36,6 +36,9 @@ import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
 
+/**
+ * @author <a href="mailto:249418416@qq.com">mapleleaf</a>
+ */
 public abstract class EasyTransform extends Transform {
 
     protected Project mProject;
