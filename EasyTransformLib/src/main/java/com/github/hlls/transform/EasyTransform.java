@@ -3,16 +3,22 @@ package com.github.hlls.transform;
 import com.android.build.api.transform.DirectoryInput;
 import com.android.build.api.transform.Format;
 import com.android.build.api.transform.JarInput;
+import com.android.build.api.transform.QualifiedContent;
 import com.android.build.api.transform.Status;
 import com.android.build.api.transform.Transform;
 import com.android.build.api.transform.TransformInput;
 import com.android.build.api.transform.TransformInvocation;
 import com.android.build.api.transform.TransformOutputProvider;
+import com.android.build.gradle.AppExtension;
+import com.android.build.gradle.BaseExtension;
+import com.android.build.gradle.LibraryExtension;
 import com.android.ide.common.internal.WaitableExecutor;
 import com.android.utils.FileUtils;
+import com.google.common.collect.ImmutableSet;
 
 import org.apache.http.util.TextUtils;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.ExtensionContainer;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
@@ -26,7 +32,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
@@ -41,7 +49,10 @@ import javassist.NotFoundException;
  */
 public abstract class EasyTransform extends Transform {
 
+    private ClassPool mClassPool = new ClassPool(true);
     protected Project mProject;
+    protected CurrentScope mCurrentScope;
+    private Map<String, ClassPath> mMapPermanentClassPath = new ConcurrentHashMap<>();
 
     public EasyTransform(Project project) {
         if (project == null) {
@@ -49,6 +60,14 @@ public abstract class EasyTransform extends Transform {
         }
 
         mProject = project;
+        BaseExtension extension = getExtension(mProject);
+        if (extension instanceof AppExtension) {
+            mCurrentScope = CurrentScope.PROJECT;
+        } else if (extension instanceof LibraryExtension) {
+            mCurrentScope = CurrentScope.SUB_PROJECT;
+        } else {
+            mCurrentScope = CurrentScope.UNKNOWN;
+        }
     }
 
     /**
@@ -66,6 +85,8 @@ public abstract class EasyTransform extends Transform {
      * @return true：对所传入的文件对象进行了修改，false：未做修改
      */
     protected abstract boolean justModifyNotWriteBack(CtClass ctClass);
+
+    protected abstract Set<? super QualifiedContent.Scope> getRawScopes();
 
     /**
      * 判断所传入文件是否要进行transform操作
@@ -98,6 +119,21 @@ public abstract class EasyTransform extends Transform {
     }
 
     @Override
+    final public Set<? super QualifiedContent.Scope> getScopes() {
+        Set<? super QualifiedContent.Scope> set = getRawScopes();
+        if (mCurrentScope == CurrentScope.SUB_PROJECT) {
+            if ((set == null) || set.isEmpty()) {
+                return set;
+            } else {
+                // 子模块只支持这一种类型，若有其他类型编译时会报错
+                return ImmutableSet.of(QualifiedContent.Scope.PROJECT);
+            }
+        } else {
+            return set;
+        }
+    }
+
+    @Override
     public void transform(TransformInvocation transformInvocation) throws IOException {
         TransformOutputProvider outputProvider = transformInvocation.getOutputProvider();
         boolean isIncremental = transformInvocation.isIncremental();
@@ -110,16 +146,17 @@ public abstract class EasyTransform extends Transform {
         }
 
         // 添加 android.jar 路径
-        com.android.build.gradle.AppExtension app = mProject.getExtensions()
-                .getByType(com.android.build.gradle.AppExtension.class);
-        List<File> list = app.getBootClasspath();
-        if ((list != null) && !list.isEmpty()) {
-            String bootClasspath = list.get(0).getAbsolutePath();
-            if (!TextUtils.isEmpty(bootClasspath)) {
-                try {
-                    getClassPool().appendClassPath(bootClasspath);
-                } catch (NotFoundException e) {
+        BaseExtension be = getExtension(mProject);
+        if (be != null) {
+            List<File> list = be.getBootClasspath();
+            if (!list.isEmpty()) {
+                String bootClasspath = list.get(0).getAbsolutePath();
+                if (!TextUtils.isEmpty(bootClasspath)) {
+                    try {
+                        appendPermanentClassPath(bootClasspath);
+                    } catch (NotFoundException e) {
 
+                    }
                 }
             }
         }
@@ -468,13 +505,23 @@ public abstract class EasyTransform extends Transform {
     }
 
     private ClassPool getClassPool() {
-        return ClassPool.getDefault();
+        return mClassPool;
     }
 
     private ClassInfo getClassInfo(String path) throws NotFoundException {
         ClassPool classPool = getClassPool();
         ClassPath classPath = classPool.appendClassPath(path);
         return new ClassInfo(classPool, classPath);
+    }
+
+    protected ClassPath appendPermanentClassPath(String pathname) throws NotFoundException {
+        if (mMapPermanentClassPath.containsKey(pathname)) {
+            return mMapPermanentClassPath.get(pathname);
+        }
+        ClassPool classPool = getClassPool();
+        ClassPath cp = classPool.appendClassPath(pathname);
+        mMapPermanentClassPath.put(pathname, cp);
+        return cp;
     }
 
     // pathExcludePackage：不包含包名的文件夹，类似.../app/build/tmp/kotlin-classes/debug
@@ -508,6 +555,15 @@ public abstract class EasyTransform extends Transform {
         private File mJarFile;
         private boolean mHasModified;
 
+    }
+
+    public static BaseExtension getExtension(Project project) {
+        if (project == null) {
+            return null;
+        }
+        ExtensionContainer ec = project.getExtensions();
+        AppExtension app = ec.findByType(AppExtension.class);
+        return ((app == null) ? ec.findByType(LibraryExtension.class) : app);
     }
 
 }

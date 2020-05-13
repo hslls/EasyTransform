@@ -1,11 +1,17 @@
 apply plugin: 'java-library'
-apply plugin: 'com.novoda.bintray-release'
+
+boolean pulishLocal = false
+if (pulishLocal) {
+    apply plugin: 'maven-publish'
+} else {
+    apply plugin: 'com.novoda.bintray-release'
+}
 
 buildscript {
     repositories {
-        maven {
-            url 'https://maven.aliyun.com/repository/jcenter'
-        }
+//        maven {
+//            url 'https://maven.aliyun.com/repository/jcenter'
+//        }
 
         jcenter()
     }
@@ -15,12 +21,12 @@ buildscript {
 }
 
 repositories {
-    maven {
-        url 'https://maven.aliyun.com/repository/google'
-    }
-    maven {
-        url 'https://maven.aliyun.com/repository/jcenter'
-    }
+//    maven {
+//        url 'https://maven.aliyun.com/repository/google'
+//    }
+//    maven {
+//        url 'https://maven.aliyun.com/repository/jcenter'
+//    }
 
     google()
     jcenter()
@@ -33,11 +39,36 @@ dependencies {
     implementation 'org.zeroturnaround:zt-zip:1.13'
 }
 
-publish {
-    userOrg = 'mapleleaf'
-    groupId = 'com.github.hlls'
-    artifactId = 'transform'
-    publishVersion = '0.0.4'
-    desc = 'Android transform 辅助基类'
-    website = 'https://github.com/hslls/EasyTransform.git'
+String GROUP_ID = 'com.github.hlls'
+String ARTIFACT_ID = 'transform'
+if (pulishLocal) {
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                groupId GROUP_ID
+                artifactId ARTIFACT_ID
+                version "0.0.1-SNAPSHOT"
+
+                from components.java
+            }
+        }
+        repositories {
+            maven {
+                url 'http://localhost:8081/repository/maven-snapshots/'
+                credentials {
+                    username 'your-username'
+                    password 'your-password'
+                }
+            }
+        }
+    }
+} else {
+    publish {
+        userOrg = 'mapleleaf'
+        groupId = GROUP_ID
+        artifactId = ARTIFACT_ID
+        publishVersion = '0.0.5'
+        desc = 'Android transform 辅助基类'
+        website = 'https://github.com/hslls/EasyTransform.git'
+    }
 }
